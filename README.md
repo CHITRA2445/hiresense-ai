@@ -134,12 +134,10 @@ git clone https://github.com/CHITRA2445/hiresense-ai.git
 cd hiresense-ai
 ```
 
-3. Install dependencies:
+2. Install dependencies:
 ```bash
 npm install
 ```
-
----
 
 3. Create `.env.local`
 
