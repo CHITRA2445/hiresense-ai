@@ -131,7 +131,7 @@ git clone https://github.com/CHITRA2445/hiresense-ai.git
 ```
 
 ```bash
-cd ai-mock-interview-platform
+cd hiresense-ai
 ```
 
 3. Install dependencies:
