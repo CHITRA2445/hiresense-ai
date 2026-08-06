@@ -20,20 +20,97 @@ An intelligent, speech-interactive mock interview platform designed to help job 
 
 ```text
 ai-mock-interview-platform/
+├── public/
 ├── src/
+│   ├── assets/
 │   ├── components/
 │   │   ├── ui/
+│   │   │   ├── accordion.tsx
+│   │   │   ├── alert.tsx
+│   │   │   ├── badge.tsx
+│   │   │   ├── breadcrumb.tsx
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── form.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── label.tsx
+│   │   │   ├── separator.tsx
+│   │   │   ├── sheet.tsx
+│   │   │   ├── skeleton.tsx
+│   │   │   ├── sonner.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   ├── textarea.tsx
+│   │   │   └── tooltip.tsx
 │   │   ├── AnswerTimer.tsx
+│   │   ├── Containers.tsx
+│   │   ├── CustomBreadCrum.tsx
+│   │   ├── Footer.tsx
+│   │   ├── FormMockInterview.tsx
+│   │   ├── Generate.tsx
+│   │   ├── Header.tsx
+│   │   ├── Headings.tsx
+│   │   ├── InterviewPin.tsx
+│   │   ├── LogoContainer.tsx
+│   │   ├── marquee-img.tsx
+│   │   ├── Model.tsx
+│   │   ├── NavigationRoutes.tsx
+│   │   ├── ProfileContainer.tsx
 │   │   ├── QuestionSection.tsx
-│   │   └── RecordAnswer.tsx
+│   │   ├── RecordAnswer.tsx
+│   │   ├── SaveModel.tsx
+│   │   ├── ToggleContainer.tsx
+│   │   └── TooltipButton.tsx
 │   ├── config/
+│   ├── handlers/
+│   ├── layouts/
+│   │   ├── AuthenticationLayout.tsx
+│   │   ├── MainLayouts.tsx
+│   │   ├── ProtectedRoutesLayout.tsx
+│   │   └── PublicLayouts.tsx
+│   ├── lib/
+│   │   ├── helper.ts
+│   │   └── utils.ts
+│   ├── provider/
 │   ├── Routes/
+│   │   ├── About.tsx
+│   │   ├── Contact.tsx
+│   │   ├── CreateEditPage.tsx
+│   │   ├── Dashboard.tsx
+│   │   ├── FeedBack.tsx
+│   │   ├── Home.tsx
+│   │   ├── Loaderpage.tsx
+│   │   ├── MockInterviewPage.tsx
+│   │   ├── MockLoadPage.tsx
+│   │   ├── Servives.tsx
+│   │   ├── SignIn.tsx
+│   │   └── SignUp.tsx
 │   ├── scripts/
-│   └── types/
-├── public/
+│   │   └── index.ts
+│   ├── types/
+│   ├── App.tsx
+│   ├── index.css
+│   ├── main.tsx
+│   └── vite-env.d.ts
 ├── .env.local
-└── package.json
+├── .firebaserc
+├── .gitignore
+├── components.json
+├── eslint.config.js
+├── firebase.json
+├── index.html
+├── package-lock.json
+├── package.json
+├── postcss.config.js
+├── README.md
+├── tailwind.config.js
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+└── vite.config.ts
 ```
+
+
 ---
 
 ## 🚀 Getting Started
