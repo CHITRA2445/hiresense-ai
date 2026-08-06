@@ -15,6 +15,18 @@ An intelligent, speech-interactive mock interview platform designed to help job 
 * 🔐 **Secure Authentication:** User authentication and session management powered by Clerk.
 
 ---
+## 🛠️ Tech Stack
+
+| Category | Technology |
+| :--- | :--- |
+| **Frontend Framework** | React 18, TypeScript, Vite |
+| **Styling & Components** | Tailwind CSS, Lucide Icons, Shadcn UI |
+| **Authentication** | Clerk (`@clerk/clerk-react`) |
+| **Database** | Firebase Firestore |
+| **AI Engine** | Google Gemini API |
+| **Voice Processing** | `react-hook-speech-to-text`, Web Speech Synthesis API |
+
+---
 
 ## 📂 Project Structure
 
