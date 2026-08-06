@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { TooltipButton } from "./TooltipButton";
 import { Volume2, VolumeX } from "lucide-react";
 import { RecordAnswer } from "./RecordAnswer";
+// 👈 STEP 1: IMPORT THE CLOCK WE JUST CREATED
 import { AnswerTimer } from "@/components/AnswerTimer";
 
 interface QuestionSectionProps {
@@ -134,8 +135,8 @@ export const QuestionSection = ({ questions }: QuestionSectionProps) => {
                 />
               </div>
 
-              {/* Live Answer Timer & Pace Tracker */}
-              <div className="my-4">
+              {/* 👈 STEP 2: DISPLAY THE TIMER/PACING BADGE WHEN RECORDING IS ACTIVE */}
+              <div className="my-4 flex items-center justify-center w-full">
                 <AnswerTimer isRecording={isWebCam} />
               </div>
 

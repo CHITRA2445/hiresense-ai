@@ -26,6 +26,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "@/config/firebase-config";
+import { AnswerTimer } from "./AnswerTimer";
 
 interface AIResponse {
   rating: number;
@@ -54,7 +55,7 @@ export const RecordAnswer = ({
     useLegacyResults: false,
   });
 
-  // States to have manage the answer wrt to questions
+  // States to manage the answer wrt questions
   const [userAnswer, setUserAnswer] = useState("");
   const [isAIGenerating, setIsAIGenerating] = useState(false);
   const [aiResult, setAiResult] = useState<AIResponse | null>(null);
@@ -124,7 +125,6 @@ export const RecordAnswer = ({
 
     // Here we will get the ai response using the chat session within try-catch block
     try {
-      //Here is chatsession
       const aiResult = await chatSession.sendMessage(prompt);
       const responseText = aiResult.response.text();
       console.log("AI Response:", responseText);
@@ -148,6 +148,7 @@ export const RecordAnswer = ({
     stopSpeechToText();
     startSpeechToText();
   };
+
   // This is used for saving the user answer into the database
   const saveUserAnswer = async () => {
     setLoading(true);
@@ -159,7 +160,7 @@ export const RecordAnswer = ({
     // For current question
     const currentQuestion = question.question;
     try {
-      // query the firebase to check if the user answer alreadhy exists or not
+      // query the firebase to check if the user answer already exists or not
       const userAnswerQuery = query(
         collection(db, "userAnswers"),
         where("userId", "==", userId),
@@ -169,14 +170,13 @@ export const RecordAnswer = ({
       const querySnap = await getDocs(userAnswerQuery);
       // If the user already answer the question don't save it
       if (!querySnap.empty) {
-        console.log("Query Sanp Size", querySnap.size);
+        console.log("Query Snap Size", querySnap.size);
         toast.info("Already Answered", {
           description: "You have already answered this question",
         });
         return;
       } else {
         // save the user answer into database
-
         await addDoc(collection(db, "userAnswers"), {
           mockIdRef: interviewId,
           question: question.question,
@@ -240,8 +240,11 @@ export const RecordAnswer = ({
         )}
       </div>
 
+      {/* ⏱️ Answer Timer & Pace Tracker tied to active mic recording */}
+      <AnswerTimer isRecording={isRecording} />
+
       {/* Action button Section */}
-      <div className="flex itece justify-center gap-3">
+      <div className="flex items-center justify-center gap-3">
         {/* video */}
         <TooltipButton
           content={isWebCam ? "Turn Off" : "Turn On"}
@@ -299,9 +302,8 @@ export const RecordAnswer = ({
         </p>
 
         {interimResult && (
-          <p className="test-sm text-gray-500 mt-2">
-            <strong>Current Speech:</strong>
-            {interimResult}
+          <p className="text-sm text-gray-500 mt-2">
+            <strong>Current Speech:</strong> {interimResult}
           </p>
         )}
       </div>
