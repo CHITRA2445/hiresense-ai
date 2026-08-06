@@ -28,7 +28,12 @@ interface FormMockInterviewProps {
   initialData: Interview | null;
 }
 
-// This is the schema for the form validsation
+interface QAItem {
+  question: string;
+  answer: string;
+}
+
+// Schema for form validation
 const formSchema = z.object({
   position: z
     .string()
@@ -43,15 +48,92 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+// Keys we'll accept as "this is the question text" / "this is the answer text"
+const QUESTION_KEYS = [
+  "question",
+  "Question",
+  "questionText",
+  "question_text",
+  "interview_question",
+  "interviewQuestion",
+  "q",
+  "prompt",
+];
+
+const ANSWER_KEYS = [
+  "answer",
+  "Answer",
+  "answerText",
+  "answer_text",
+  "a",
+  "response",
+  "solution",
+];
+
+const extractField = (item: any, keys: string[]): string | null => {
+  if (!item || typeof item !== "object") return null;
+  for (const key of keys) {
+    if (item[key] && typeof item[key] === "string") return item[key];
+  }
+  return null;
+};
+
+/**
+ * Normalizes whatever shape the AI returned into a strict
+ * { question, answer }[] array. Handles:
+ *  1. The happy path: every object already has both fields.
+ *  2. A "split" response: the model returned question-only and
+ *     answer-only objects (e.g. alternating), which we pair up in order.
+ * Throws if neither shape matches, so the caller can surface a real error
+ * instead of silently saving broken data.
+ */
+const normalizeQA = (parsed: any[]): QAItem[] => {
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    throw new Error("AI response was not a non-empty array");
+  }
+
+  // Case 1: every item already has both a question and an answer field
+  const hasBoth = parsed.every(
+    (item) => extractField(item, QUESTION_KEYS) && extractField(item, ANSWER_KEYS)
+  );
+
+  if (hasBoth) {
+    return parsed.map((item) => ({
+      question: extractField(item, QUESTION_KEYS) as string,
+      answer: extractField(item, ANSWER_KEYS) as string,
+    }));
+  }
+
+  // Case 2: question-only objects and answer-only objects, same count -> pair them
+  const questionOnly = parsed.filter(
+    (item) => extractField(item, QUESTION_KEYS) && !extractField(item, ANSWER_KEYS)
+  );
+  const answerOnly = parsed.filter(
+    (item) => extractField(item, ANSWER_KEYS) && !extractField(item, QUESTION_KEYS)
+  );
+
+  if (questionOnly.length > 0 && questionOnly.length === answerOnly.length) {
+    return questionOnly.map((qItem, idx) => ({
+      question: extractField(qItem, QUESTION_KEYS) as string,
+      answer: extractField(answerOnly[idx], ANSWER_KEYS) as string,
+    }));
+  }
+
+  // Nothing matched a known shape — fail loudly instead of saving garbage
+  console.error("Could not normalize AI response. Raw parsed data:", parsed);
+  throw new Error(
+    "AI response is missing question text for one or more items. Check console for raw data."
+  );
+};
+
 export const FormMockInterview = ({ initialData }: FormMockInterviewProps) => {
-  // This is the schema for the form validsation
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
       description: initialData.description || "",
       position: initialData.position || "",
-      experience: typeof initialData.experience === 'string' 
-        ? parseInt(initialData.experience, 10) || 0 
+      experience: typeof initialData.experience === 'string'
+        ? parseInt(initialData.experience, 10) || 0
         : initialData.experience || 0,
       techStack: initialData.techStack || "",
     } : {
@@ -62,93 +144,99 @@ export const FormMockInterview = ({ initialData }: FormMockInterviewProps) => {
     },
   });
 
-  // necessary states
   const { isValid, isSubmitting } = form.formState;
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { userId } = useAuth();
 
-  // title passing
   const title = initialData?.position
     ? initialData?.position
     : "Create a new Mock Interview";
 
-  // for breadcrum
   const breadCrumbPage = initialData?.position ? "Edit" : "Create";
-  // For the actions and toastmessage
   const actions = initialData ? "Save Changes" : "Create";
   const toastMessage = initialData
     ? { title: "Updated..!", description: "Changes saved successfully..." }
     : { title: "Created..!", description: "New Mock Interview created..." };
-  // const cleanAiResponse function
-  const cleanAiResponse = (responseText: string) => {
-    // Step 1 : trim any surrounding whitespace
+
+  // Cleans markdown fences, extracts the JSON array, parses it,
+  // then normalizes it into a guaranteed { question, answer }[] shape.
+  const cleanAiResponse = (responseText: string): QAItem[] => {
     let cleanText = responseText.trim();
 
-    // Step 2: Remove any occurrences of "json" or code block symbols (``` or `)
-    cleanText = cleanText.replace(/(json|```|`)/g, "");
+    cleanText = cleanText
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/, "")
+      .replace(/```$/, "")
+      .trim();
 
-    // Step 3: Extract a JSON array by capturing text between square brackets
-    const jsonArraymatch = cleanText.match(/\[.*\]/s);
-    if (jsonArraymatch) {
-      cleanText = jsonArraymatch[0];
+    const jsonArrayMatch = cleanText.match(/\[.*\]/s);
+    if (jsonArrayMatch) {
+      cleanText = jsonArrayMatch[0];
     } else {
       throw new Error("No JSON array found in response");
     }
 
-    // Step 4: Parse the clean JSON text into an array of objects
+    let parsed: any[];
     try {
-      return JSON.parse(cleanText);
+      parsed = JSON.parse(cleanText);
     } catch (error) {
       throw new Error("Invalid JSON format: " + (error as Error)?.message);
     }
+
+    return normalizeQA(parsed);
   };
 
-  // Generate AI response function
-  const generateAiResponse = async (data: FormData) => {
-    const prompt = `As an experienced prompt engineer, generate a JSON array containing 5 technical interview questions along with detailed answers based on the following job information. Each object in the array should have the fields "question" and "answer", formatted as follows:
-
-    [
-      { "question": "<Question text>", "answer": "<Answer text>" },
-      ...
-    ]
-
-    Job Information:
+  const generateAiResponse = async (data: FormData): Promise<QAItem[]> => {
+    const prompt = `Generate a strict JSON array containing 5 technical interview questions and answers based on:
     - Job Position: ${data?.position}
     - Job Description: ${data?.description}
-    - Years of Experience Required: ${data?.experience}
-    - Tech Stacks: ${data?.techStack}
+    - Years of Experience: ${data?.experience}
+    - Tech Stack: ${data?.techStack}
 
-    The questions should assess skills in ${data?.techStack} development and best practices, problem-solving, and experience handling complex requirements. Please format the output strictly as an array of JSON objects without any additional labels, code blocks, or explanations. Return only the JSON array with questions and answers.
-    `;
+    STRICT REQUIREMENT: Output MUST be a valid JSON array of EXACTLY 5 objects.
+    Every single object MUST contain BOTH of these two keys, with non-empty string values:
+    "question" and "answer".
+    Do NOT return an object that has only "answer" without "question", or vice versa.
+
+    Example format:
+    [
+      {
+        "question": "What is the virtual DOM in React?",
+        "answer": "The virtual DOM is a lightweight copy of the real DOM..."
+      }
+    ]
+    Do not include any intro, markdown text outside code blocks, or extra keys. Return ONLY the JSON array.`;
 
     const aiResult = await chatSession.sendMessage(prompt);
-    const cleanResponse = cleanAiResponse(aiResult.response.text());
+    const rawText = aiResult.response.text();
+
+    // Keep this while you're debugging — remove once you trust the pipeline.
+    console.log("RAW AI RESPONSE:", rawText);
+
+    const cleanResponse = cleanAiResponse(rawText);
+    console.log("NORMALIZED QA:", cleanResponse);
 
     return cleanResponse;
   };
 
-  // For subitting of form
   const onSubmit = async (data: FormData) => {
     try {
       setLoading(true);
       if (initialData) {
-        // update interview data
-        if (isValid){
+        if (isValid) {
           const aiResult = await generateAiResponse(data);
 
-          await updateDoc(doc(db, "interviews" , initialData?.id), {
-            questions: aiResult, 
+          await updateDoc(doc(db, "interviews", initialData?.id), {
+            questions: aiResult,
             ...data,
             updateAt: serverTimestamp(),
-          }).catch((error) => console.log(error));
-          //toast message
-          toast.success(toastMessage.title, { description: toastMessage.description});
+          });
+
+          toast.success(toastMessage.title, { description: toastMessage.description });
         }
       } else {
-        // create new interview data
         if (isValid) {
-          // A function generateAiresponse
           const aiResult = await generateAiResponse(data);
 
           await addDoc(collection(db, "interviews"), {
@@ -158,15 +246,17 @@ export const FormMockInterview = ({ initialData }: FormMockInterviewProps) => {
             createdAt: serverTimestamp(),
           });
 
-          toast.success(toastMessage.title, { description: toastMessage.description});
+          toast.success(toastMessage.title, { description: toastMessage.description });
         }
       }
 
-      navigate("/generate" , {replace: true});
+      navigate("/generate", { replace: true });
     } catch (error) {
-      console.log(error);
+      console.error("onSubmit error:", error);
       toast.error("Error..", {
-        description: `Something went wrong. Please try again later`,
+        description:
+          (error as Error)?.message ||
+          "Something went wrong. Please try again later",
       });
     } finally {
       setLoading(false);
@@ -232,8 +322,7 @@ export const FormMockInterview = ({ initialData }: FormMockInterviewProps) => {
             )}
           />
 
-          {/* Description  */}
-
+          {/* Description */}
           <FormField
             control={form.control}
             name="description"
@@ -247,7 +336,7 @@ export const FormMockInterview = ({ initialData }: FormMockInterviewProps) => {
                   <Textarea
                     className="h-12"
                     disabled={loading}
-                    placeholder="eg:- describle your job role"
+                    placeholder="eg:- describe your job role"
                     {...field}
                     value={field.value || ""}
                   />
@@ -257,7 +346,6 @@ export const FormMockInterview = ({ initialData }: FormMockInterviewProps) => {
           />
 
           {/* Experience */}
-
           <FormField
             control={form.control}
             name="experience"
@@ -281,8 +369,7 @@ export const FormMockInterview = ({ initialData }: FormMockInterviewProps) => {
             )}
           />
 
-          {/*Tech Stacks */}
-
+          {/* Tech Stacks */}
           <FormField
             control={form.control}
             name="techStack"

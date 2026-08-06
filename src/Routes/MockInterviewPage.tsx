@@ -88,7 +88,7 @@ export const MockInterviewPage = () => {
         {interview?.questions && interview?.questions.length > 0 && (
             <div className="mt-4 w-full flex flex-col items-start gap-4">
                 <QuestionSection questions={interview?.questions.map(q => ({
-                  question: q.questions,
+                  question: q.question,
                   answer: q.answer
                 }))}/>
             </div>
