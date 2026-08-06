@@ -4,19 +4,24 @@ import {
   HarmBlockThreshold,
 } from "@google/generative-ai";
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY!;
-const genAI = new GoogleGenerativeAI(apiKey);
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
+if (!apiKey) {
+  console.error("VITE_GEMINI_API_KEY is missing in your .env.local file!");
+}
+
+const genAI = new GoogleGenerativeAI(apiKey || "");
+
+// Changed model string to gemini-1.5-flash-8b
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",  //gemini-2.5-pro-exp-03-25
+  model: "gemini-3.5-flash-lite",
 });
 
 const generationConfig = {
   temperature: 0.7,
   topP: 0.95,
   topK: 64,
-  maxOutputTokens: 2048, // Adjust this as needed (65536 might be too high)
-  responseModalities: [],
+  maxOutputTokens: 2048,
   responseMimeType: "text/plain",
 };
 
@@ -40,6 +45,6 @@ const safetySettings = [
 ];
 
 export const chatSession = model.startChat({
-    generationConfig,
-    safetySettings,
+  generationConfig,
+  safetySettings,
 });
