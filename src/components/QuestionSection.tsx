@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { TooltipButton } from "./TooltipButton";
 import { Volume2, VolumeX } from "lucide-react";
 import { RecordAnswer } from "./RecordAnswer";
+import { AnswerTimer } from "@/components/AnswerTimer";
 
 interface QuestionSectionProps {
   questions: any[];
@@ -15,9 +16,7 @@ export const QuestionSection = ({ questions }: QuestionSectionProps) => {
   const [currentSpeech, setCurrentSpeech] =
     useState<SpeechSynthesisUtterance | null>(null);
 
-  // Only used as a safety net for OLD Firestore docs saved before the
-  // generation-side normalization fix. New docs will always have a clean
-  // { question, answer } shape and hit the very first check below.
+  // Safety net for reading questions across various object formats
   const getQuestionText = (item: any): string => {
     if (!item) return "No question data";
     if (typeof item === "string") return item;
@@ -43,7 +42,6 @@ export const QuestionSection = ({ questions }: QuestionSectionProps) => {
       }
     }
 
-    // This item only has an "answer" (or similar) — old malformed record.
     console.warn(
       "QuestionSection: item is missing a question field, showing raw data.",
       item
@@ -94,7 +92,7 @@ export const QuestionSection = ({ questions }: QuestionSectionProps) => {
     <div className="w-full min-h-96 border rounded-md p-4">
       <Tabs
         defaultValue="question-0"
-        className="w-full space-y-12"
+        className="w-full space-y-8"
         orientation="vertical"
       >
         <TabsList className="bg-transparent w-full flex flex-wrap items-center justify-start gap-4">
@@ -121,6 +119,7 @@ export const QuestionSection = ({ questions }: QuestionSectionProps) => {
               <p className="text-base text-left tracking-wide text-neutral-800 font-medium my-4">
                 {qText}
               </p>
+
               <div className="w-full flex items-center justify-end mb-4">
                 <TooltipButton
                   content={isPlaying ? "Stop" : "Start"}
@@ -133,6 +132,11 @@ export const QuestionSection = ({ questions }: QuestionSectionProps) => {
                   }
                   onClick={() => handlePlayQuestion(qText)}
                 />
+              </div>
+
+              {/* Live Answer Timer & Pace Tracker */}
+              <div className="my-4">
+                <AnswerTimer isRecording={isWebCam} />
               </div>
 
               <RecordAnswer
