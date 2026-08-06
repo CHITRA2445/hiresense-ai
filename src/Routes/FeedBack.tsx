@@ -16,7 +16,7 @@ import LoaderPage from "./Loaderpage";
 import { CustomBreadCrum } from "@/components/CustomBreadCrum";
 import { Headings } from "@/components/Headings";
 import { InterviewPin } from "@/components/InterviewPin";
-// Accrodion
+// Accordion
 import {
   Accordion,
   AccordionContent,
@@ -24,8 +24,9 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
-import { CircleCheck, Star } from "lucide-react";
+import { CircleCheck, Star, Download } from "lucide-react";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export const FeedBack = () => {
   const { interviewId } = useParams<{ interviewId: string }>();
@@ -93,7 +94,7 @@ export const FeedBack = () => {
     }
   }, [interviewId, navigate, userId]);
 
-  // Calucate the ratings for the feedback out of 10 , using UseMemo hook
+  // Calculate the ratings for the feedback out of 10, using useMemo hook
   const overAllRating = useMemo(() => {
     if (feedbacks.length === 0) return "0.0";
 
@@ -105,13 +106,35 @@ export const FeedBack = () => {
     return (totalRatings / feedbacks.length).toFixed(1);
   }, [feedbacks]);
 
+  // Function to handle downloading/printing the PDF report card
+  const handleDownloadPDF = () => {
+    window.print();
+  };
+
   if (isLoading) {
     return <LoaderPage className="w-full h-[70vh]" />;
   }
 
   return (
     <div className="flex flex-col w-full gap-8 py-5">
-      {/* This is for the breadcrum  */}
+      {/* Print-specific style override to keep colors and force open feedback in PDF */}
+      <style>{`
+        @media print {
+          .print\\:hidden {
+            display: none !important;
+          }
+          body {
+            background-color: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          [data-state="closed"] > div {
+            display: block !important;
+          }
+        }
+      `}</style>
+
+      {/* Header section with Breadcrumbs and Download PDF Button */}
       <div className="flex items-center justify-between w-full gap-2">
         <CustomBreadCrum
           breadCrumbPage={"Feedback"}
@@ -123,6 +146,13 @@ export const FeedBack = () => {
             },
           ]}
         />
+
+        <Button
+          onClick={handleDownloadPDF}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 shadow-sm print:hidden"
+        >
+          <Download className="w-4 h-4" /> Download PDF Report
+        </Button>
       </div>
 
       <Headings
@@ -152,7 +182,7 @@ export const FeedBack = () => {
               <AccordionTrigger
                 onClick={() => setActiveFeed(feed.id)}
                 className={cn(
-                  "px-5 py-3 items-center justify-between text-base rounded-t-lg trasition-colors hover:no-underline",
+                  "px-5 py-3 items-center justify-between text-base rounded-t-lg transition-colors hover:no-underline",
                   activeFeed === feed.id
                     ? "bg-gradient-to-r from-purple-50 to-blue-50 "
                     : "hover:bg-gray-50"
@@ -163,12 +193,12 @@ export const FeedBack = () => {
 
               {/* Accordion content for the feedback */}
               <AccordionContent className="px-5 py-6 bg-white rounded-b-lg space-y-5 shadow-inner">
-                <div className="text-lg font-semibold to-gray-700">
-                  <Star />
+                <div className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                  <Star className="text-amber-500 fill-amber-500 w-5 h-5" />
                   Ratings: {feed.rating}
                 </div>
 
-                {/* Question link  */}
+                {/* Expected Answer section */}
                 <Card className="border-none space-y-3 p-4 bg-green-50 rounded-lg shadow-md">
                   <CardTitle className="flex items-center text-lg">
                     <CircleCheck className="mr-2 text-green-600" />
@@ -180,7 +210,7 @@ export const FeedBack = () => {
                   </CardDescription>
                 </Card>
 
-                {/* this user answer section  */}
+                {/* User answer section */}
                 <Card className="border-none space-y-3 p-4 bg-yellow-50 rounded-lg shadow-md">
                   <CardTitle className="flex items-center text-lg">
                     <CircleCheck className="mr-2 text-yellow-600" />
@@ -192,6 +222,7 @@ export const FeedBack = () => {
                   </CardDescription>
                 </Card>
 
+                {/* Feedback section */}
                 <Card className="border-none space-y-3 p-4 bg-red-50 rounded-lg shadow-md">
                   <CardTitle className="flex items-center text-lg">
                     <CircleCheck className="mr-2 text-red-600" />
